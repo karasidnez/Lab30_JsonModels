@@ -12,11 +12,15 @@ namespace HeroesApi.Controllers;
 public class HeroesController : ControllerBase
 {
     [HttpGet]
-    public ActionResult<List<Hero>> GetAll()
+    public ActionResult<List<Hero>> GetAll([FromQuery] string? universe = null)
     {
-        return Ok(HeroesStore.Heroes);
+        var heroes = HeroesStore.Heroes.AsEnumerable();
+        if (!string.IsNullOrEmpty(universe))
+        {
+            heroes = heroes.Where(h => h.Universe.ToString().Equals(universe, StringComparison.OrdinalIgnoreCase));
+        }
+        return Ok(heroes.ToList());
     }
-    [HttpGet("{id}")]
     public ActionResult<Hero> GetById(int id)
     {
         var hero = HeroesStore.Heroes.FirstOrDefault(h => h.Id == id);
@@ -26,6 +30,19 @@ public class HeroesController : ControllerBase
         }
         return Ok(hero);
     }
+    [HttpGet("search")]
+    public ActionResult<List<Hero>> Search([FromQuery] string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "Параметр name не может быть пустым" });
+
+        var result = HeroesStore.Heroes
+            .Where(h => h.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return Ok(result);
+    }
+
     [HttpGet("demo")]
     public ActionResult GetDemo()
     {
